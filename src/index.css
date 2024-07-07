@@ -39,4 +39,14 @@ body{
   background-color: rgba(17, 25, 40, 0.9);
 }
 
+.list{
+  flex: 1;
+}
 
+.chat {
+  flex: 2;
+}
+
+.detail {
+  flex: 1;
+}
