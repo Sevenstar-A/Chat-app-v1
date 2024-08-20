@@ -7,17 +7,14 @@
 
 }
 
-
-body{
+body {
   background-image: url("/bg.jpg");
   display: flex;
   align-items: center;
   justify-content: center;
   height: 100vh;
   color: white;
-  
 }
-
 
 .container{
   background: rgba(3, 3, 94, 0.582);
@@ -27,10 +24,9 @@ body{
   backdrop-filter: blur(19px) saturate(180%);
   border-radius: 30px;
   display: flex;
-  
-  /* justify-content:space-between; */
     
 }
+
 
 .loading{
   padding: 50px;
@@ -39,14 +35,20 @@ body{
   background-color: rgba(17, 25, 40, 0.9);
 }
 
+
 .list{
   flex: 1;
+  max-width: 30%;
+  padding: auto;
 }
+
 
 .chat {
   flex: 2;
+  max-width: 50%;  
 }
 
 .detail {
   flex: 1;
+  /* max-width: 20%; */
 }

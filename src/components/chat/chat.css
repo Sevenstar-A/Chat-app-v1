@@ -1,12 +1,10 @@
 .chat {
-    flex: 2;
     border-left: 1px solid #dddddd35;
     border-right: 1px solid #dddddd35;
     display: flex;
     flex-direction: column;
-    
     height: 100;
-
+    
     .top {
         padding: 20px;
         display: flex;

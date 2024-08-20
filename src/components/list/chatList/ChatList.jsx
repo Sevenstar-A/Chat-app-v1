@@ -1,20 +1,48 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import './chatList.css'
+import AddUser from './addUser/AddUser'
+import { useUserStore } from '../../../lib/userStore'
+import { doc, onSnapshot, getDoc } from 'firebase/firestore'
+import { db } from '../../../lib/firebase'
+import { useChatStore } from '../../../lib/useChatStore'
 
 export default function ChatList() {
   const [addMode, setMode] = useState(false)
-  const chat_messages = () => {
-    const array = []
-    for (let index = 0; index < 8; index++) {
-      array[index] = index;
-    }
-    return array
+  const [userChats, setChats] = useState([])
+  const { currentUser, } = useUserStore();
+  const { changeChat, chatId } = useChatStore();
 
+  useEffect(() => {
+    const ref = doc(db, "userchats", currentUser.id)
+    const unSub = onSnapshot(ref, async (res) => {
+      const userChatsList = res.data().chats
+
+      const promises = userChatsList.map(async (userChat) => {
+        const userRef = doc(db, "users", userChat.receiverId)
+        const userDoc = await getDoc(userRef)
+        const user = userDoc.data();
+        return { ...userChat, user }
+
+      });
+
+      const chatData = await Promise.all(promises);
+
+      setChats(chatData.sort((a, b) => b.updatedAt - a.updatedAt));
+
+      return () => { unSub() };
+
+    })
+  }, [currentUser.id])
+
+  function handleSelectChat(chat) {
+    changeChat(chat.chatId, chat.user);
+    console.log("Chat Store : ", useChatStore.getState())
   }
-  
 
   return (
     <div className='chatList'>
+
+      {addMode && <AddUser />}
 
       {/* search bar */}
       <div className='search'>
@@ -22,20 +50,25 @@ export default function ChatList() {
           <img src='/search.png' />
           <input name='search-item' placeholder='Search' />
         </div>
-        <img className='add' src={addMode ? '/plus.png' : '/minus.png'}
+        <img className='add' src={addMode ? '/minus.png' : '/plus.png'}
           onClick={() => setMode(prev => !prev)} />
       </div>
 
-      {chat_messages().map(() => {
-        return <div className='item'>
-          <img src='/avatar.png' />
-          <div className='texts'>
-            <span>Jane Doe</span>
-            <p>Hello</p>
+      {userChats.map((chat) => {
+        return <div key={chat.chatId}
+                    style={chat.isSeen?{background:"transparent"}: {background:"#5183fe"}}
+                    className={chatId == chat.chatId ? "item selected" : "item"} 
+                    onClick={() => { handleSelectChat(chat) }}
+                    
+        >
+          <img src={chat.user.avatar || '/avatar.png'} />
+          <div className='texts' >
+            <span>{chat.user.username}</span>
+            <p>{chat.lastMessage || "None"}</p>
           </div>
         </div>
       })}
-      
+
 
 
     </div>

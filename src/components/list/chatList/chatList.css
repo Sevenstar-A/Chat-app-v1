@@ -7,7 +7,7 @@
   .search {
     display: flex;
     align-items: center;
-    padding: 20px ;
+    padding: 10px  ;
     gap:20px;
 
     .search-bar {
@@ -95,6 +95,11 @@
     cursor: pointer;
     border-bottom: 1px solid #dddddd35;
 
+    &.selected{
+      border:1.5px rgb(220, 220, 236) solid;
+      padding: 18px;
+      border-radius: 10px;
+    }
     img {
       width: 50px;
       height: 50px;

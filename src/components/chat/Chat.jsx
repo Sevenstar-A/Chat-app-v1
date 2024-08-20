@@ -1,40 +1,104 @@
 import React, { useEffect, useRef, useState } from 'react'
 import EmojiPicker from 'emoji-picker-react'
 import "./chat.css"
+import { arrayUnion, doc, getDoc, onSnapshot, updateDoc } from 'firebase/firestore';
+import { db } from '../../lib/firebase';
+import { useChatStore } from '../../lib/useChatStore';
+import { useUserStore } from '../../lib/userStore';
+
 
 export default function Chat() {
-    const [openEmoji, setOpenEmoji] = useState(false);
-    const [text, setText] = useState("");
-    const inputRef = useRef(null);
-    const scrollRef = useRef(null);
+  const [chat, setChat] = useState();
+  const { chatId, user } = useChatStore();
+  const { currentUser } = useUserStore();
+  const [openEmoji, setOpenEmoji] = useState(false);
+  const [text, setText] = useState("");
+  const inputRef = useRef(null);
+  const scrollRef = useRef(null);
 
-    
-    useEffect(()=>{
-      // scroll to the last message
-      scrollRef.current?.scrollIntoView({behavior: "smooth"});
-      
-      // focus on the input
-      inputRef.current?.focus();
-      
-    },[])
 
-    
+
+  useEffect(() => {
+    // scroll to the last message
+    scrollRef.current?.scrollIntoView({ behavior: "smooth" });
+    // focus on the input
+    inputRef.current?.focus();
+  }, [])
+
+  useEffect(() => {
+    console.log("Rendering Chat Detail Page")
+    const ref = doc(db, "chats", chatId)
+    const unSub = onSnapshot(ref, (res) => {
+      setChat(res.data());
+    })
+
+    return () => {
+      unSub();
+    }
+  }, [chatId])
+
+
 
   const handleEmojiClick = e => {
     console.log(e, e.emoji);
-
     setText(prev => prev + e.emoji);
     setOpenEmoji(false);
   }
+
+  const handleSend = async () => {
+    if (text !== "") {
+      try {
+        await updateDoc(doc(db, "chats", chatId,), {
+          messages: arrayUnion({
+            senderId: currentUser.id,
+            text: text,
+            createdAt: Date.now(),
+          })
+        })
+      }
+      catch (error) {
+        console.log(error)
+      }
+
+      const userIds = [currentUser.id, user.id]
+      userIds.forEach(async (user_id) => {
+
+        const userChatRef = doc(db, "userchats", user_id)
+        const snapShot = await getDoc(userChatRef)
+        // snapShot => {chats [ {chatId, lastMessage, receiverId, updatedAt, isSeen}, ...]}
+        if (snapShot.exists()) {
+          const snapShotData = snapShot.data();
+          // this is the id of the chat, from all the user chats
+          const index = snapShotData.chats.findIndex(i => i.chatId == chatId)
+
+          snapShotData.chats[index].lastMessage = text
+          snapShotData.chats[index].updatedAt = Date.now()
+          snapShotData.chats[index].isSeen = user_id == currentUser.id ? true : false
+
+          await updateDoc(userChatRef, {
+            chats: snapShotData.chats
+          })
+
+        }
+
+      })
+
+
+    }
+
+    setText("");
+
+  }
+
 
   return (
     <div className='chat' >
       <div className="top">
         <div className="user">
-          <img src="/avatar.png" alt="" />
+          <img src={user.avatar || "/avatar.png"} alt="" />
           <div className="texts">
-            <span>Jane Doe</span>
-            <p>Lorem Ipsum dolor, sit amet.</p>
+            <span>{user?.username}</span>
+            <p>{user?.email}</p>
           </div>
         </div>
         <div className="icons">
@@ -47,56 +111,23 @@ export default function Chat() {
 
 
       <div className="center">
-        <div className="message">
-          <img src="/avatar.png" alt="" />
-          <div className="texts">
-            <p>Lorem, ipsum dolor sit amet consectetur adipisicing elit. Eligendi quisquam quia velit nulla, tempore quae excepturi libero voluptatum accusantium in quo facilis maiores temporibus culpa corporis laudantium, dolor fuga officia!</p>
-            <span>1 min ago</span>
+        {chat?.messages?.map((message) => (
+          message.text!=="" && message.text!=="None" && <>
+           <div
+            className={
+              message.senderId === currentUser?.id ? "message own" : "message"
+            }
+            key={message?.createAt}
+          >
+            <div className="texts">
+              {message.img && <img src={message.img} alt="" />}
+              <p>{message.text}</p>
+              <span>{message.createdAt}</span>
+            </div>
           </div>
-        </div>
-
-        <div className="message own">
-          
-          <div className="texts">
-            <p>Lorem, ipsum dolor sit amet consectetur adipisicing elit. Eligendi quisquam quia velit nulla, tempore quae excepturi libero voluptatum accusantium in quo facilis maiores temporibus culpa corporis laudantium, dolor fuga officia!</p>
-            <span>1 min ago</span>
-          </div>
-        </div>
-        <div className="message">
-          <img src="/avatar.png" alt="" />
-          <div className="texts">
-            <p>Lorem, ipsum dolor sit amet consectetur adipisicing elit. Eligendi quisquam quia velit nulla, tempore quae excepturi libero voluptatum accusantium in quo facilis maiores temporibus culpa corporis laudantium, dolor fuga officia!</p>
-            <span>1 min ago</span>
-          </div>
-        </div>
-
-        <div className="message own">
-          
-          <div className="texts">
-            <p>Lorem, ipsum dolor sit amet consectetur adipisicing elit. Eligendi quisquam quia velit nulla, tempore quae excepturi libero voluptatum accusantium in quo facilis maiores temporibus culpa corporis laudantium, dolor fuga officia!</p>
-            <span>1 min ago</span>
-          </div>
-        </div>
-
-        <div className="message">
-          <img src="/avatar.png" alt="" />
-          <div className="texts">
-            <p>Lorem, ipsum dolor sit amet consectetur adipisicing elit. Eligendi quisquam quia velit nulla, tempore quae excepturi libero voluptatum accusantium in quo facilis maiores temporibus culpa corporis laudantium, dolor fuga officia!</p>
-            <span>1 min ago</span>
-          </div>
-        </div>
-
-        {/* use scrollRef on the last item */}
-        <div className="message own" ref={scrollRef}>
-          
-          <div className="texts">
-            <img src="https://miro.medium.com/v2/resize:fit:2000/format:webp/1*ikFbXGafVdsDDCJAzrvfBg@2x.png" alt="" />
-            <p>Lorem, ipsum dolor sit amet consectetur adipisicing elit. Eligendi quisquam quia velit nulla, tempore quae excepturi libero voluptatum accusantium in quo facilis maiores temporibus culpa corporis laudantium, dolor fuga officia!</p>
-            <span>2 min ago</span>
-          </div>
-        </div>
-
-
+          </>
+         
+        ))}
 
       </div>
 
@@ -119,7 +150,7 @@ export default function Chat() {
 
         </div>
 
-        <button className="sendButton">Send</button>
+        <button className="sendButton" onClick={handleSend}>Send</button>
 
       </div>
     </div>
