@@ -4,7 +4,7 @@
     display: flex;
     flex-direction: column;
     height: 100;
-    
+
     .top {
         padding: 20px;
         display: flex;
@@ -79,13 +79,15 @@
             gap: 20px;
 
             &.own {
-                align-self: flex-end ;
+                align-self: flex-end;
+
                 /* img{display: none;} */
                 .texts {
                     p {
                         background-color: #5183fe;
                     }
-                    span{
+
+                    span {
                         margin-left: auto;
                     }
                 }
@@ -118,6 +120,30 @@
 
 
         }
+
+        .sent-img-container {
+            padding: 5px 0px; 
+            display: flex; 
+            flex-direction: row; 
+            gap: 10px;
+            background: #80808057; 
+            border-radius: 10px;
+
+            .img-to-sent{
+                width: 80px; 
+                height: 60px; 
+                border-radius: 10px;
+            }
+
+            .cancel-img{
+                width: 17px; 
+                height: 17px; 
+                position: relative; 
+                left: 100px; 
+                top: -7px;
+            }
+        }
+
 
         /* height: 100%; */
 

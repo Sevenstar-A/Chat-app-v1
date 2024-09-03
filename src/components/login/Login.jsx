@@ -13,8 +13,8 @@ export default function Login() {
   const logout = ()=>signOut(auth);
   
   useEffect(() => {
-    console.log("rerendering")
-    // signOut(auth)
+    console.log("rerendering Login Page!")
+    
   })
 
   function LoadingSetter(s,e){
@@ -145,7 +145,6 @@ export default function Login() {
           <label htmlFor="file" className="image-label">
             <img src={avatar.url || "./avatar.png"} className='avatar-image' id='id_avatar' />
             Upload Image
-
           </label>
           <input type="file" name="image" id="file" style={{ display: "none" }} onChange={handleAvatar} />
           <input type="text" name="username" id="" placeholder='Username' />

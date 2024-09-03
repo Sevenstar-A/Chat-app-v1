@@ -5,6 +5,8 @@ import { arrayUnion, doc, getDoc, onSnapshot, updateDoc } from 'firebase/firesto
 import { db } from '../../lib/firebase';
 import { useChatStore } from '../../lib/useChatStore';
 import { useUserStore } from '../../lib/userStore';
+import upload from '../../lib/upload';
+import { format } from "timeago.js";
 
 
 export default function Chat() {
@@ -15,7 +17,7 @@ export default function Chat() {
   const [text, setText] = useState("");
   const inputRef = useRef(null);
   const scrollRef = useRef(null);
-
+  const [imgFile, setImgFile] = useState({ file: null, url: "" })
 
 
   useEffect(() => {
@@ -45,14 +47,39 @@ export default function Chat() {
     setOpenEmoji(false);
   }
 
+  const handleImageSelect = e => {
+    if (e.target.files) {
+      const file = e.target.files[0]
+      const url = URL.createObjectURL(e.target.files[0])
+      console.log(file, " ", url)
+      setImgFile({ file, url })
+    }
+    else {
+      alert("no image selected")
+    }
+
+  }
+
+  const removeImg = () => {
+    if (confirm("Are you sure you want to remove this img?")) {
+      setImgFile({ file: null, url: "" })
+    }
+  }
+
   const handleSend = async () => {
-    if (text !== "") {
+    if (text !== "" || imgFile.file) {
       try {
+        let uploadImgUrl = null
+        if (imgFile.file){
+          uploadImgUrl = await upload(imgFile.file);
+        }
+
         await updateDoc(doc(db, "chats", chatId,), {
           messages: arrayUnion({
             senderId: currentUser.id,
             text: text,
             createdAt: Date.now(),
+            img: uploadImgUrl  
           })
         })
       }
@@ -87,6 +114,7 @@ export default function Chat() {
     }
 
     setText("");
+    setImgFile({file:null, url:""})
 
   }
 
@@ -109,34 +137,46 @@ export default function Chat() {
         </div>
       </div>
 
-
       <div className="center">
         {chat?.messages?.map((message) => (
-          message.text!=="" && message.text!=="None" && <>
-           <div
-            className={
-              message.senderId === currentUser?.id ? "message own" : "message"
-            }
-            key={message?.createAt}
-          >
-            <div className="texts">
-              {message.img && <img src={message.img} alt="" />}
-              <p>{message.text}</p>
-              <span>{message.createdAt}</span>
+          ((message.text !== "" && message.text !== "None") || (message.img != null)  ) && <>
+            <div
+              className={
+                message.senderId === currentUser?.id ? "message own" : "message"
+              }
+              key={message.createAt}
+            >
+              <div className="texts">
+                {message?.img && <img src={message.img} alt="" />}
+                {message?.text && <p>{message.text}</p>}
+                <span>{format(message.createdAt)}</span>
+              </div>
             </div>
-          </div>
           </>
-         
+
         ))}
+
+        {/* img selector */}
+        {
+          imgFile.file &&
+          <div className='sent-img-container'>
+            <img src="/cancel.png" alt=""  className='cancel-img' onClick={removeImg} />
+            <img src={imgFile.url} alt=""  className='img-to-sent' onClick={() => {window.open(imgFile.url)}} />
+          </div>
+        }
+
 
       </div>
 
-
-
       {/* Bottom */}
+
       <div className="bottom" >
+
         <div className="icons">
-          <img src="/img.png" alt="" />
+          <input id='id_img' name="img_file" type='file' style={{ display: 'none' }} onChange={handleImageSelect} />
+          <label htmlFor='id_img'>
+            <img src="/img.png" alt="" />
+          </label>
           <img src="/camera.png" alt="" />
           <img src="/mic.png" alt="" />
         </div>
@@ -147,7 +187,6 @@ export default function Chat() {
 
         <div className="emoji">
           <EmojiPicker className='picker' open={openEmoji} onEmojiClick={handleEmojiClick} />
-
         </div>
 
         <button className="sendButton" onClick={handleSend}>Send</button>
